@@ -1,0 +1,16 @@
+{
+  "name": "draw-game-server",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch index.ts",
+    "start": "tsx index.ts"
+  },
+  "dependencies": {
+    "socket.io": "^4.7.5"
+  },
+  "devDependencies": {
+    "tsx": "^4.22.3",
+    "typescript": "^5"
+  }
+}
