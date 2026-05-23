@@ -190,13 +190,31 @@ io.on("connection", (socket) => {
   socket.on("start_game", () => {
     const room = findRoomBySocket(socket.id);
     if (!room || room.hostId !== socket.id) return;
-    if (room.players.filter((p) => p.connected).length < 2) {
-      socket.emit("error", "至少需要2名玩家");
-      return;
-    }
     room.round = 0;
     room.players.forEach((p) => (p.score = 0));
     nextTurn(room);
+  });
+
+  // Solo practice — skip to word reveal
+  socket.on("solo_practice", () => {
+    const room = findRoomBySocket(socket.id);
+    if (!room) return;
+    room.status = "playing";
+    room.currentDrawer = socket.id;
+    room.currentWord = randomWord();
+    room.roundTime = 0;
+    io.to(socket.id).emit("your_word", room.currentWord);
+    io.to(room.code).emit("game_state", getRoomState(room));
+  });
+
+  // Next word in solo mode
+  socket.on("next_word", () => {
+    const room = findRoomBySocket(socket.id);
+    if (!room || socket.id !== room.currentDrawer) return;
+    room.currentWord = randomWord();
+    io.to(socket.id).emit("your_word", room.currentWord);
+    io.to(room.code).emit("clear_canvas");
+    io.to(room.code).emit("game_state", getRoomState(room));
   });
 
   // Drawing events (relay from drawer to guessers)

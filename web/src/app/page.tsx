@@ -198,6 +198,17 @@ export default function Home() {
     socket?.emit("start_game");
   }
 
+  function soloPractice() {
+    if (!playerName.trim()) return;
+    const s = connect(playerName.trim());
+    s.emit("create_room", playerName.trim());
+    s.on("room_created", (code: string) => {
+      setRoomCode(code);
+      setScreen("game");
+      s.emit("solo_practice");
+    });
+  }
+
   if (screen === "home") {
     return (
       <div style={{ maxWidth: 420, margin: "10vh auto", padding: "0 1rem" }}>
@@ -209,9 +220,10 @@ export default function Home() {
           onChange={(e) => setPlayerName(e.target.value)}
           maxLength={10}
           style={inputStyle}
-          onKeyDown={(e) => e.key === "Enter" && createRoom()}
+          onKeyDown={(e) => e.key === "Enter" && soloPractice()}
         />
-        <button onClick={createRoom} style={btnStyle("#1971c2")}>创建房间</button>
+        <button onClick={soloPractice} style={btnStyle("#9c36b5")}>🎨 Solo 练习</button>
+        <button onClick={createRoom} style={btnStyle("#1971c2")}>创建多人房间</button>
         <div style={{ margin: "1.5rem 0", textAlign: "center", color: "#868e96" }}>———— 或加入已有房间 ————</div>
         <input
           placeholder="房间代码 (4位)"
@@ -268,6 +280,8 @@ export default function Home() {
     );
   }
 
+  const isSolo = gameState && gameState.players.length === 1;
+
   // GAME SCREEN
   return (
     <div style={{ display: "flex", height: "100vh", flexDirection: "column" }}>
@@ -278,8 +292,14 @@ export default function Home() {
         flexShrink: 0,
       }}>
         <div>
-          <strong>第 {gameState ? gameState.round + 1 : 1}/{gameState?.maxRounds} 轮</strong>
-          <span style={{ marginLeft: "0.75rem", color: "#e03131", fontWeight: 700 }}>⏱ {timer}s</span>
+          {isSolo ? (
+            <span style={{ color: "#9c36b5", fontWeight: 700 }}>🎨 Solo 练习</span>
+          ) : (
+            <>
+              <strong>第 {gameState ? gameState.round + 1 : 1}/{gameState?.maxRounds} 轮</strong>
+              <span style={{ marginLeft: "0.75rem", color: "#e03131", fontWeight: 700 }}>⏱ {timer}s</span>
+            </>
+          )}
         </div>
         <div style={{ color: "#868e96", fontSize: "0.85rem" }}>
           {amDrawer ? "🎨 你在画" : "🔍 猜词中"}
@@ -374,8 +394,23 @@ export default function Home() {
             ))}
           </div>
 
+          {/* Solo: Next Word button */}
+          {isSolo && (
+            <div style={{ padding: "0.75rem", borderTop: "1px solid #dee2e6" }}>
+              <button onClick={() => socket?.emit("next_word")} style={btnStyle("#9c36b5")}>
+                换一个词 →
+              </button>
+              <button onClick={() => {
+                socket?.emit("clear_canvas");
+                clearCanvas();
+              }} style={btnStyle("#868e96")}>
+                清空画布
+              </button>
+            </div>
+          )}
+
           {/* Guess input */}
-          {!amDrawer && (
+          {!amDrawer && !isSolo && (
             <div style={{ padding: "0.75rem", borderTop: "1px solid #dee2e6", display: "flex", gap: 4 }}>
               <input
                 placeholder="输入猜测..."
